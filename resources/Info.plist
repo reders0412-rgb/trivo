@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>Trivo</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.trivo.app</string>
+    <key>CFBundleName</key>
+    <string>Trivo</string>
+    <key>CFBundleDisplayName</key>
+    <string>Trivo</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>TRVO</string>
+    <key>CFBundleIconFile</key>
+    <string>trivo.icns</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>GL Transmission Format</string>
+            <key>CFBundleTypeExtensions</key>
+            <array><string>glb</string><string>gltf</string></array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Filmbox</string>
+            <key>CFBundleTypeExtensions</key>
+            <array><string>fbx</string></array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Wavefront OBJ</string>
+            <key>CFBundleTypeExtensions</key>
+            <array><string>obj</string></array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Stereolithography</string>
+            <key>CFBundleTypeExtensions</key>
+            <array><string>stl</string></array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>COLLADA</string>
+            <key>CFBundleTypeExtensions</key>
+            <array><string>dae</string></array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>3D Files</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>3ds</string><string>ply</string><string>blend</string>
+                <string>bvh</string><string>x</string><string>dxf</string>
+                <string>ifc</string><string>step</string><string>stp</string>
+                <string>iges</string><string>igs</string><string>lwo</string>
+                <string>ms3d</string><string>md2</string><string>md3</string>
+            </array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+    </array>
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+</dict>
+</plist>

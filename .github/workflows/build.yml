@@ -1,0 +1,279 @@
+name: Build & Release Trivo
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ── Windows ─────────────────────────────────────────────────────────────────
+  build-windows:
+    name: "🪟 Windows x64 (MSVC)"
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: C:/vcpkg/installed
+          key: vcpkg-windows-assimp-${{ hashFiles('vcpkg.json') }}
+
+      - name: Install Assimp via vcpkg
+        shell: pwsh
+        run: |
+          vcpkg integrate install
+          vcpkg install assimp:x64-windows
+          echo "VCPKG_ROOT=C:/vcpkg" >> $env:GITHUB_ENV
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.7.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          cache: true
+          cache-key-prefix: 'qt6-win64'
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -B build -S . `
+            -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config Release --parallel $env:NUMBER_OF_PROCESSORS
+
+      - name: Deploy (windeployqt)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/Trivo | Out-Null
+          Copy-Item build/bin/Release/Trivo.exe dist/Trivo/
+          $qtBin = "$env:Qt6_DIR/../../../bin"
+          & "$qtBin/windeployqt.exe" dist/Trivo/Trivo.exe `
+            --no-translations `
+            --no-system-d3d-compiler `
+            --no-opengl-sw `
+            --release
+          # Copy assimp DLL
+          $assimpDll = Get-ChildItem "C:/vcpkg/installed/x64-windows/bin/assimp*.dll" | Select-Object -First 1
+          if ($assimpDll) { Copy-Item $assimpDll.FullName dist/Trivo/ }
+          # Copy zlib DLL (assimp dep)
+          $zlibDll = Get-ChildItem "C:/vcpkg/installed/x64-windows/bin/zlib*.dll" | Select-Object -First 1
+          if ($zlibDll) { Copy-Item $zlibDll.FullName dist/Trivo/ }
+
+      - name: Create ZIP
+        shell: pwsh
+        run: Compress-Archive -Path dist/Trivo -DestinationPath Trivo-Windows-x64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trivo-Windows-x64
+          path: Trivo-Windows-x64.zip
+
+  # ── macOS ────────────────────────────────────────────────────────────────────
+  build-macos:
+    name: "🍎 macOS Universal (arm64 + x86_64)"
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: brew-assimp-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Install Assimp
+        run: brew install assimp
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.7.0'
+          host: 'mac'
+          target: 'desktop'
+          arch: 'clang_64'
+          cache: true
+          cache-key-prefix: 'qt6-mac'
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(sysctl -n hw.logicalcpu)
+
+      - name: Bundle (macdeployqt → DMG)
+        run: |
+          APP_PATH="build/bin/Trivo.app"
+          # macdeployqt is in Qt bin dir
+          QT_BIN="${Qt6_DIR}/../../../bin"
+          "${QT_BIN}/macdeployqt" "${APP_PATH}" \
+            -dmg \
+            -no-strip
+          mv build/bin/Trivo.dmg Trivo-macOS-Universal.dmg
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trivo-macOS
+          path: Trivo-macOS-Universal.dmg
+
+  # ── Linux ────────────────────────────────────────────────────────────────────
+  build-linux:
+    name: "🐧 Linux x86_64 (AppImage)"
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build \
+            libassimp-dev \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev \
+            libxcb-cursor-dev libxcb-icccm4-dev \
+            libxcb-image0-dev libxcb-keysyms1-dev \
+            libxcb-randr0-dev libxcb-render-util0-dev \
+            libxcb-shape0-dev libxcb-xinerama0-dev \
+            libxcb-xinput-dev libxcb-xfixes0-dev \
+            libfontconfig1-dev libfreetype6-dev \
+            libdbus-1-dev libharfbuzz-dev \
+            fuse libfuse2 wget patchelf
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.7.0'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+          cache: true
+          cache-key-prefix: 'qt6-linux'
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . \
+            -GNinja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Install into AppDir
+        run: |
+          DESTDIR="$(pwd)/AppDir" cmake --install build
+
+      - name: Download AppImage tools
+        run: |
+          wget -q "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          wget -q "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: Build AppImage
+        env:
+          QMAKE: ${{ env.Qt6_DIR }}/../../../bin/qmake
+          OUTPUT: Trivo-Linux-x86_64.AppImage
+        run: |
+          # Ensure icon exists
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp resources/icons/trivo_app.svg AppDir/usr/share/icons/hicolor/scalable/apps/trivo.svg
+          cp resources/icons/trivo_app.svg AppDir/usr/share/icons/hicolor/256x256/apps/trivo.png || true
+          cp resources/trivo.desktop AppDir/usr/share/applications/trivo.desktop
+
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --plugin qt \
+            --output appimage \
+            --desktop-file AppDir/usr/share/applications/trivo.desktop \
+            --icon-file resources/icons/trivo_app.svg
+
+          mv Trivo*.AppImage Trivo-Linux-x86_64.AppImage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trivo-Linux-x86_64
+          path: Trivo-Linux-x86_64.AppImage
+
+  # ── Release ──────────────────────────────────────────────────────────────────
+  release:
+    name: "🚀 GitHub Release"
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: List artifacts
+        run: find dist/ -type f
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Trivo ${{ github.ref_name }}"
+          body: |
+            ## 🧊 Trivo ${{ github.ref_name }}
+
+            오픈소스 3D 파일 뷰어 / Open-source 3D File Viewer
+
+            ### 📥 다운로드 / Downloads
+
+            | 플랫폼 / Platform | 파일 / File |
+            |---|---|
+            | 🪟 Windows 10/11 (x64) | `Trivo-Windows-x64.zip` |
+            | 🍎 macOS 11+ (Universal) | `Trivo-macOS-Universal.dmg` |
+            | 🐧 Linux x86_64 | `Trivo-Linux-x86_64.AppImage` |
+
+            ### ✨ 주요 기능 / Features
+            - **30+ 3D 형식** 지원: GLB · GLTF · FBX · OBJ · DAE · STL · PLY · 3DS · BLEND · BVH · ...
+            - **PBR 렌더링** (OpenGL 4.1 Core Profile)
+            - **다중 모델 씬** — 여러 모델을 하나의 씬에 배치
+            - **애니메이션 재생** — 속도 조절 포함
+            - **5가지 라이트 프리셋** — Studio / Outdoor / Dramatic / Soft / Night
+            - **다크 / 라이트 테마** 전환
+            - **한국어 / 영어** UI
+            - **드래그 앤 드롭** 지원
+
+            ### 🛠 사용 라이브러리 / Libraries
+            - [Qt6](https://www.qt.io) — LGPL v3
+            - [Assimp](https://github.com/assimp/assimp) — BSD 3-Clause
+            - OpenGL 4.1 Core Profile
+
+          files: |
+            dist/**/*.zip
+            dist/**/*.dmg
+            dist/**/*.AppImage
+          draft: false
+          prerelease: false
+          generate_release_notes: true

@@ -1,0 +1,53 @@
+#pragma once
+#include <QObject>
+#include <QVector3D>
+#include <QString>
+#include <QColor>
+#include <vector>
+#include <memory>
+
+struct SceneModel {
+    QString  filePath;
+    QString  name;
+    QVector3D position{0,0,0};
+    QVector3D rotation{0,0,0};
+    QVector3D scale{1,1,1};
+    bool     visible   = true;
+    bool     hasAnim   = false;
+    int      vertCount = 0;
+    int      triCount  = 0;
+    int      meshCount = 0;
+    int      matCount  = 0;
+    int      boneCount = 0;
+    // GPU handle filled by Renderer
+    unsigned int vao = 0;
+    // raw assimp scene (managed by ModelLoader)
+    void *assimpScene = nullptr;
+};
+
+class Scene : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit Scene(QObject *parent = nullptr);
+
+    void addModel(const QString &path);
+    void clear();
+    void removeModel(int index);
+
+    const std::vector<std::shared_ptr<SceneModel>> &models() const { return m_models; }
+
+    QColor backgroundColor() const { return m_bgColor; }
+    void   setBackgroundColor(const QColor &c) { m_bgColor = c; emit backgroundColorChanged(c); }
+
+signals:
+    void modelAdded(std::shared_ptr<SceneModel>);
+    void modelRemoved(int index);
+    void sceneCleared();
+    void backgroundColorChanged(const QColor &c);
+
+private:
+    std::vector<std::shared_ptr<SceneModel>> m_models;
+    QColor m_bgColor{30, 30, 38};
+};

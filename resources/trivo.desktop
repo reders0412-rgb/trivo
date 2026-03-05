@@ -1,0 +1,16 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Trivo
+Name[ko]=Trivo 3D 뷰어
+GenericName=3D Viewer
+GenericName[ko]=3D 파일 뷰어
+Comment=Open-source 3D file viewer supporting GLB, FBX, OBJ and 30+ formats
+Comment[ko]=GLB, FBX, OBJ 등 30가지 이상의 3D 파일을 지원하는 오픈소스 뷰어
+Exec=Trivo %F
+Icon=trivo
+Terminal=false
+StartupNotify=true
+Categories=Graphics;3DGraphics;Viewer;
+MimeType=model/gltf-binary;model/gltf+json;application/x-blender;model/stl;model/obj;
+Keywords=3D;model;viewer;GLB;FBX;OBJ;STL;GLTF;

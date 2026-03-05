@@ -24,6 +24,7 @@
 #include <QStandardPaths>
 #include <QMessageBox>
 #include <QStatusBar>
+#include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -193,7 +194,7 @@ void MainWindow::applyTheme(bool dark)
         QSpinBox, QDoubleSpinBox { background: #ffffff; color: #1a1a2e; border: 1px solid #ccc; border-radius: 6px; padding: 3px 6px; }
     )";
 
-    qApp->setStyleSheet(qss);
+    static_cast<QApplication*>(QCoreApplication::instance())->setStyleSheet(qss);
     if (m_toolbar) m_toolbar->updateThemeIcon(dark);
 }
 

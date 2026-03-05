@@ -23,6 +23,7 @@
 #include <QDateTime>
 #include <QStandardPaths>
 #include <QMessageBox>
+#include <QStatusBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)

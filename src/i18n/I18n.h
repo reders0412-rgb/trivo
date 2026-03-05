@@ -1,6 +1,7 @@
 #pragma once
 #include <QString>
 #include <QMap>
+#include <QObject>
 
 class I18n : public QObject
 {

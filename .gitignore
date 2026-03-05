@@ -1,19 +1,33 @@
+# Build
 build/
 dist/
+
+# Qt
+*.pro.user
+
+# Artifacts
 *.AppImage
 *.dmg
 *.zip
+
+# CMake
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
 *.user
+
+# vcpkg (별도 디렉토리 사용 — 프로젝트에 포함 안 함)
+vcpkg/
+vcpkg_installed/
+
+# OS
 .DS_Store
 Thumbs.db
-*.o
-*.obj
-*.a
-*.lib
-*.dll
-*.so
-*.dylib
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -89,46 +89,30 @@ jobs:
             --parallel $env:NUMBER_OF_PROCESSORS
 
       # ── 배포 패키징 ───────────────────────────────────────────────────────
-      - name: "📁 Deploy (windeployqt)"
+      - name: "📁 Deploy (windeployqt & All DLLs)"
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist\Trivo | Out-Null
+          $dest = "dist\Trivo"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
-          # 빌드된 exe 찾기
+          # 1. 빌드된 exe 복사
           $exe = Get-ChildItem -Recurse build -Filter Trivo.exe |
                    Where-Object { $_.FullName -match "Release" } |
                    Select-Object -First 1
-          if (-not $exe) {
-            $exe = Get-ChildItem -Recurse build -Filter Trivo.exe | Select-Object -First 1
-          }
-          Write-Host "EXE: $($exe.FullName)"
-          Copy-Item $exe.FullName dist\Trivo\Trivo.exe
+          Copy-Item $exe.FullName "$dest\Trivo.exe"
 
-          # windeployqt (중복 제거 및 경로 수정)
+          # 2. Qt 관련 파일 배포
           $qtBin = "$env:QT_ROOT_DIR\bin"
-          & "$qtBin\windeployqt.exe" dist\Trivo\Trivo.exe `
-            --no-translations `
-            --no-system-d3d-compiler `
-            --no-opengl-sw `
-            --release
+          & "$qtBin\windeployqt.exe" "$dest\Trivo.exe" --no-translations --release
 
-          # Assimp DLL
-          Get-ChildItem "C:\vcpkg_standalone\installed\x64-windows\bin" `
-            -Filter "assimp*.dll" |
-            ForEach-Object { Copy-Item $_.FullName dist\Trivo\ }
+          # 3. vcpkg의 모든 DLL을 한 번에 설치 (이 부분이 핵심!)
+          $vcpkgBin = "C:\vcpkg_standalone\installed\x64-windows\bin"
+          if (Test-Path $vcpkgBin) {
+            Get-ChildItem "$vcpkgBin\*.dll" | Copy-Item -Destination $dest -Force
+          }
 
-          # zlib DLL (Assimp 의존성)
-          Get-ChildItem "C:\vcpkg_standalone\installed\x64-windows\bin" `
-            -Filter "zlib*.dll" |
-            ForEach-Object { Copy-Item $_.FullName dist\Trivo\ }
-
-          # minizip DLL (있으면)
-          Get-ChildItem "C:\vcpkg_standalone\installed\x64-windows\bin" `
-            -Filter "minizip*.dll" -ErrorAction SilentlyContinue |
-            ForEach-Object { Copy-Item $_.FullName dist\Trivo\ }
-
-          Write-Host "dist\Trivo contents:"
-          Get-ChildItem dist\Trivo | ForEach-Object { Write-Host "  $($_.Name)" }
+          Write-Host "배포 폴더 내용:"
+          Get-ChildItem $dest | ForEach-Object { Write-Host "  $($_.Name)" }
 
       - name: "📦 Package ZIP"
         shell: pwsh

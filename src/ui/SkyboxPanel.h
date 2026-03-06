@@ -29,12 +29,12 @@ signals:
     void skyboxRotationChanged(double rotation);
     void skyboxLoadTextureRequested(const QString &path);
 
+private slots:
+    void onRotationChanged(int value);
+
 private:
     void setupSkyboxUI();
     void updateSkyboxPreview();
-
-private slots:
-    void onRotationChanged(int value);
 
     std::shared_ptr<Scene> m_scene;
     

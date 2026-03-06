@@ -9,6 +9,7 @@
 #include "../i18n/I18n.h"
 #include "../utils/FileUtils.h"
 
+#include <QFileDevice>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QSplitter>

@@ -11,6 +11,7 @@
 #include <QScrollArea>
 #include <QPixmap>
 #include <QFileInfo>
+#include <QPainter>
 
 TexturePanel::TexturePanel(std::shared_ptr<Scene> scene, QWidget *parent)
     : QWidget(parent), m_scene(scene)

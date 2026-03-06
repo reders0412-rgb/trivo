@@ -20,7 +20,7 @@ public slots:
     void onSkyboxTypeChanged(int index);
     void onSkyboxColorChanged();
     void onIntensityChanged(double value);
-    void onRotationChanged(double value);
+    void onSkyboxRotationChanged(double value);
 
 signals:
     void skyboxTypeChanged(int type); // 0: 색상, 1: 그라디언트, 2: 텍스처

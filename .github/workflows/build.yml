@@ -106,23 +106,41 @@ jobs:
             Get-ChildItem "$vcpkgBin\*.dll" | Copy-Item -Destination $dest -Force
           }
 
-          # ✅ FIX: MSVC 런타임 DLL 복사 (없으면 실행 불가!)
-          # vcruntime140.dll, msvcp140.dll, concrt140.dll 등
-          $msvcRedist = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC"
-          if (-not (Test-Path $msvcRedist)) {
-            $msvcRedist = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC"
-          }
-          if (Test-Path $msvcRedist) {
-            $latestRedist = Get-ChildItem $msvcRedist | Sort-Object Name -Descending | Select-Object -First 1
-            $x64Dlls = Join-Path $latestRedist.FullName "x64\Microsoft.VC143.CRT"
-            if (Test-Path $x64Dlls) {
-              Get-ChildItem "$x64Dlls\*.dll" | Copy-Item -Destination $dest -Force
-              Write-Host "✅ MSVC CRT DLLs copied from: $x64Dlls"
-            } else {
-              Write-Host "⚠️  MSVC CRT path not found: $x64Dlls"
+          # ✅ FIX: MSVC 런타임 DLL 복사 — vswhere로 정확한 경로 탐색
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstallPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Redist.14.Latest -property installationPath 2>$null
+
+          $crtFound = $false
+          if ($vsInstallPath) {
+            $redistBase = Join-Path $vsInstallPath "VC\Redist\MSVC"
+            if (Test-Path $redistBase) {
+              $latestRedist = Get-ChildItem $redistBase | Sort-Object Name -Descending | Select-Object -First 1
+              $x64Dlls = Join-Path $latestRedist.FullName "x64\Microsoft.VC143.CRT"
+              if (Test-Path $x64Dlls) {
+                Get-ChildItem "$x64Dlls\*.dll" | Copy-Item -Destination $dest -Force
+                Write-Host "✅ MSVC CRT DLLs copied from: $x64Dlls"
+                $crtFound = $true
+              }
             }
-          } else {
-            Write-Host "⚠️  MSVC Redist not found at expected path"
+          }
+
+          # fallback: System32에서 직접 복사
+          if (-not $crtFound) {
+            Write-Host "⚠️  vswhere 경로 실패 → System32 fallback"
+            $runtimeDlls = @(
+              "vcruntime140.dll", "vcruntime140_1.dll",
+              "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+              "concrt140.dll"
+            )
+            foreach ($dll in $runtimeDlls) {
+              $src = "C:\Windows\System32\$dll"
+              if (Test-Path $src) {
+                Copy-Item $src "$dest\" -Force
+                Write-Host "  ✅ $dll"
+              } else {
+                Write-Host "  ⚠️  not found: $dll"
+              }
+            }
           }
 
           # ✅ FIX: ucrtbase.dll (Universal CRT) — Windows SDK에서 복사

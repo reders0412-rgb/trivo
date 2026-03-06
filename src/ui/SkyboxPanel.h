@@ -30,7 +30,6 @@ signals:
     void skyboxLoadTextureRequested(const QString &path);
 
 private slots:
-    void onRotationChanged(int value);
 
 private:
     void setupSkyboxUI();

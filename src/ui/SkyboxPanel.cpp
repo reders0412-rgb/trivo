@@ -206,7 +206,7 @@ void SkyboxPanel::onIntensityChanged(double value)
     updateSkyboxPreview();
 }
 
-void SkyboxPanel::onRotationChanged(double value)
+void SkyboxPanel::onSkyboxRotationChanged(double value)
 {
     emit skyboxRotationChanged(value);
     updateSkyboxPreview();

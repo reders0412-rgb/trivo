@@ -65,3 +65,4 @@ private:
     // 변환 도구
     TransformMode             m_transformMode = TransformMode::None;
     int                       m_selectedModelIdx = -1;
+};

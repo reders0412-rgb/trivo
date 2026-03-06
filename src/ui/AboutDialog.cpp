@@ -299,6 +299,7 @@ AboutDialog::AboutDialog(bool dark, QWidget *parent)
   <li>5가지 라이트 프리셋 / 5 Light presets (Studio · Outdoor · Dramatic · Soft · Night)</li>
   <li>다크 / 라이트 테마 / Dark &amp; Light theme</li>
   <li>스크린샷 저장 / Screenshot export (PNG)</li>
+  <li>스크린샷 저장 위치: 문서/Trivo 폴더 / Screenshot save location: Documents/Trivo folder</li>
   <li>그리드 배경 / Grid background</li>
 </ul>
 
